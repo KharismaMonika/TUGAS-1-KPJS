@@ -7,20 +7,31 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.os.Vibrator;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
+
+import java.io.IOException;
 
 
 public class MainActivity extends Activity implements SensorEventListener {
 
-    private float lastX, lastY, lastZ;
+
+    private int flagDuduk = 0;
+    private int flagNaikMontor = 0;
+    private int flagNaikMobil = 0;
 
     private SensorManager sensorManager;
     private Sensor accelerometer;
-
-    private float deltaXMax = 0;
-    private float deltaYMax = 0;
-    private float deltaZMax = 0;
 
     private float deltaX = 0;
     private float deltaY = 0;
@@ -38,6 +49,8 @@ public class MainActivity extends Activity implements SensorEventListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initializeViews();
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
 
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         if (sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null) {
@@ -49,19 +62,40 @@ public class MainActivity extends Activity implements SensorEventListener {
         } else {
             // fai! we dont have an accelerometer!
         }
-
         //initialize vibration
         v = (Vibrator) this.getSystemService(Context.VIBRATOR_SERVICE);
+
+        Button buttonduduk = (Button) findViewById(R.id.dudukaja);
+        buttonduduk.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                flagDuduk = 1;
+                flagNaikMontor = 0;
+                flagNaikMobil = 0;
+            }
+        });
+
+        Button buttonNaikMontor = (Button) findViewById(R.id.naikmontor);
+        buttonNaikMontor.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                flagDuduk = 0;
+                flagNaikMontor = 1;
+                flagNaikMobil = 0;
+            }
+        });
+        Button buttonNaikMobil = (Button) findViewById(R.id.naikmobil);
+        buttonNaikMobil.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                flagDuduk = 0;
+                flagNaikMontor = 0;
+                flagNaikMobil = 1;
+            }
+        });
     }
 
     public void initializeViews() {
         currentX = (TextView) findViewById(R.id.currentX);
         currentY = (TextView) findViewById(R.id.currentY);
         currentZ = (TextView) findViewById(R.id.currentZ);
-
-        maxX = (TextView) findViewById(R.id.maxX);
-        maxY = (TextView) findViewById(R.id.maxY);
-        maxZ = (TextView) findViewById(R.id.maxZ);
 
     }
 
@@ -81,25 +115,20 @@ public class MainActivity extends Activity implements SensorEventListener {
     public void onSensorChanged(SensorEvent event) {
         // clean current values
         displayCleanValues();
+
         // display the current x,y,z accelerometer values
-        displayCurrentValues();
-        // display the max x,y,z accelerometer values
-        displayMaxValues();
 
-        // get the change of the x,y,z values of the accelerometer
-        deltaX = Math.abs(lastX - event.values[0]);
-        deltaY = Math.abs(lastY - event.values[1]);
-        deltaZ = Math.abs(lastZ - event.values[2]);
-
-        // if the change is below 2, it is just plain noise
-        if (deltaX < 2)
-            deltaX = 0;
-        if (deltaY < 2)
-            deltaY = 0;
-        if ((deltaZ > vibrateThreshold) || (deltaY > vibrateThreshold) || (deltaZ > vibrateThreshold)) {
-            v.vibrate(50);
+        try {
+            displayCurrentValues();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-    }
+
+        // mendapat nilai xyz aja
+        deltaX = Math.abs(event.values[0]);
+        deltaY = Math.abs(event.values[1]);
+        deltaZ = Math.abs(event.values[2]);
+       }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
@@ -112,31 +141,58 @@ public class MainActivity extends Activity implements SensorEventListener {
         currentZ.setText("0.0");
     }
 
-    // display the current x,y,z accelerometer values
-    public void displayCurrentValues() {
-        InsertData(deltaX, deltaY, deltaZ);
+    public void displayValue() {
         currentX.setText(Float.toString(deltaX));
         currentY.setText(Float.toString(deltaY));
         currentZ.setText(Float.toString(deltaZ));
     }
 
-    public void InsertData(final float deltaX, final float deltaY, final float deltaZ) {
+    // display the current x,y,z accelerometer values
+    public void displayCurrentValues() throws IOException {
+        if (flagDuduk==1){
+            HttpClient httpClient = new DefaultHttpClient();
+            HttpGet httpget = new HttpGet("http://192.168.2.102:8000/PKJS1/welcome/tambah_data/" + Float.toString(deltaX) + "/" + Float.toString(deltaY) + "/" + Float.toString(deltaZ)+ "/1" );
+            HttpResponse response = null;
+            response = httpClient.execute(httpget);
+            if(response.getStatusLine().getStatusCode()==200){
+                String server_response = EntityUtils.toString(response.getEntity());
+                Log.i("Server response", server_response );
+            } else {
+                Log.i("Server response", "Failed to get server response" );
+            }
+            displayValue();
+        }
+        if (flagNaikMontor ==1){
+            HttpClient httpClient = new DefaultHttpClient();
+            HttpGet httpget = new HttpGet("http://192.168.2.102:8000/PKJS1/welcome/tambah_data/" + Float.toString(deltaX) + "/" + Float.toString(deltaY) + "/" + Float.toString(deltaZ)+ "/2" );
+            HttpResponse response = null;
+            response = httpClient.execute(httpget);
+            if(response.getStatusLine().getStatusCode()==200){
+                String server_response = EntityUtils.toString(response.getEntity());
+                Log.i("Server response", server_response );
+            } else {
+                Log.i("Server response", "Failed to get server response" );
+            }
+            displayValue();
+        }
+        if (flagNaikMobil ==1){
+            HttpClient httpClient = new DefaultHttpClient();
+            HttpGet httpget = new HttpGet("http://192.168.2.102:8000/PKJS1/welcome/tambah_data/" + Float.toString(deltaX) + "/" + Float.toString(deltaY) + "/" + Float.toString(deltaZ)+ "/3" );
+            HttpResponse response = null;
+            response = httpClient.execute(httpget);
+            if(response.getStatusLine().getStatusCode()==200){
+                String server_response = EntityUtils.toString(response.getEntity());
+                Log.i("Server response", server_response );
+            } else {
+                Log.i("Server response", "Failed to get server response" );
+            }
+            displayValue();
+        }
+        else {
+            displayValue();
+        }
+        //param +=Float.toString(deltaX)+"|"+Float.toString(deltaY)+ "&";
+        //url = "http://192.168.8.104:8000/PKJS1/welcome/tambah_data/?" + param;
 
-    }
-
-    // display the max x,y,z accelerometer values
-    public void displayMaxValues() {
-        if (deltaX > deltaXMax) {
-            deltaXMax = deltaX;
-            maxX.setText(Float.toString(deltaXMax));
-        }
-        if (deltaY > deltaYMax) {
-            deltaYMax = deltaY;
-            maxY.setText(Float.toString(deltaYMax));
-        }
-        if (deltaZ > deltaZMax) {
-            deltaZMax = deltaZ;
-            maxZ.setText(Float.toString(deltaZMax));
-        }
     }
 }

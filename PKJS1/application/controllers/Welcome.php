@@ -23,4 +23,28 @@ class Welcome extends CI_Controller {
 		$data['sumbu'] = $this->Cek->get_data();
 		$this->load->view('welcome_message', $data);
 	}
+
+	public function tambah_data($x, $y, $z, $class){
+		$data = array(
+		 	'sumbuX' => $x,
+			'sumbuY' => $y,
+		 	'sumbuZ' => $z,
+		 	'class' => $class
+		 	);
+		$this->db->insert('datatraining', $data);
+	}
+
+	public function cek_array(){
+		$xyz = $_GET["xyz"];
+		foreach ($xyz as $key => $value) {
+			# code...
+			$data = explode("|",$value);
+			foreach ($data as $key => $value2) {
+				print_r($value2);
+				echo " ";
+			}
+			echo "<br>";
+		}
+	}
+
 }
