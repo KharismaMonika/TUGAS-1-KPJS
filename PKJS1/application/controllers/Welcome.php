@@ -34,17 +34,145 @@ class Welcome extends CI_Controller {
 		$this->db->insert('datatraining', $data);
 	}
 
-	public function cek_array(){
-		$xyz = $_GET["xyz"];
+	public function cek_duduk(){
+		$xyz = $_GET["temp"];
+		$total = sizeof($xyz);
+		$X = 0;
+		$Y = 0;
+		$Z = 0;
 		foreach ($xyz as $key => $value) {
 			# code...
 			$data = explode("|",$value);
-			foreach ($data as $key => $value2) {
-				print_r($value2);
-				echo " ";
-			}
-			echo "<br>";
+			$X += $data[0];
+			$Y += $data[1];
+			$Z += $data[2];
 		}
+		$rataX = $X/10;
+		$rataY = $Y/10;
+		$rataZ = $Z/10;
+
+		//k=1;
+		$terkecil = 1000;
+		$temp_class = 0;
+
+		$query = $this->db->get('datatraining');
+		foreach ($query->result() as $row)
+		{
+			$dX = $rataX - ($row->sumbuX);
+			$dY = $rataY - ($row->sumbuY);
+			$dZ = $rataZ - ($row->sumbuZ);
+		    
+		    //Pengkuadratan(KNN)
+			$euc = sqrt((pow($dX,2)) + (pow($dY,2)) + (pow($dZ,2)));
+
+			if ($euc < $terkecil) {
+				$terkecil = $euc;
+				$temp_class = $row->class;
+			}
+		}
+		//$date = new DateTime();
+		date_default_timezone_set("America/New_York"); 
+
+		$testing = array(
+			'time' => " ".date("h:i:sa"),
+			'class_sebenarnya' => 1,
+			'prediksi' => $temp_class
+		);
+		$this->db->insert('record_testing', $testing);
+	}
+
+	public function cek_naikmontor(){
+		$xyz = $_GET["temp"];
+		$total = sizeof($xyz);
+		$X = 0;
+		$Y = 0;
+		$Z = 0;
+		foreach ($xyz as $key => $value) {
+			# code...
+			$data = explode("|",$value);
+			$X += $data[0];
+			$Y += $data[1];
+			$Z += $data[2];
+		}
+		$rataX = $X/10;
+		$rataY = $Y/10;
+		$rataZ = $Z/10;
+
+		//k=1;
+		$terkecil = 1000;
+		$temp_class = 0;
+
+		$query = $this->db->get('datatraining');
+		foreach ($query->result() as $row)
+		{
+			$dX = $rataX - ($row->sumbuX);
+			$dY = $rataY - ($row->sumbuY);
+			$dZ = $rataZ - ($row->sumbuZ);
+		    
+		    //Pengkuadratan(KNN)
+			$euc = sqrt((pow($dX,2)) + (pow($dY,2)) + (pow($dZ,2)));
+
+			if ($euc < $terkecil) {
+				$terkecil = $euc;
+				$temp_class = $row->class;
+			}
+		}
+		//$date = new DateTime();
+		date_default_timezone_set("America/New_York"); 
+
+		$testing = array(
+			'time' => " ".date("h:i:sa"),
+			'class_sebenarnya' => 2,
+			'prediksi' => $temp_class
+		);
+		$this->db->insert('record_testing', $testing);
+	}
+
+	public function cek_naikmobil(){
+		$xyz = $_GET["temp"];
+		$total = sizeof($xyz);
+		$X = 0;
+		$Y = 0;
+		$Z = 0;
+		foreach ($xyz as $key => $value) {
+			# code...
+			$data = explode("|",$value);
+			$X += $data[0];
+			$Y += $data[1];
+			$Z += $data[2];
+		}
+		$rataX = $X/10;
+		$rataY = $Y/10;
+		$rataZ = $Z/10;
+
+		//k=1;
+		$terkecil = 1000;
+		$temp_class = 0;
+
+		$query = $this->db->get('datatraining');
+		foreach ($query->result() as $row)
+		{
+			$dX = $rataX - ($row->sumbuX);
+			$dY = $rataY - ($row->sumbuY);
+			$dZ = $rataZ - ($row->sumbuZ);
+		    
+		    //Pengkuadratan(KNN)
+			$euc = sqrt((pow($dX,2)) + (pow($dY,2)) + (pow($dZ,2)));
+
+			if ($euc < $terkecil) {
+				$terkecil = $euc;
+				$temp_class = $row->class;
+			}
+		}
+		//$date = new DateTime();
+		date_default_timezone_set("America/New_York"); 
+
+		$testing = array(
+			'time' => " ".date("h:i:sa"),
+			'class_sebenarnya' => 3,
+			'prediksi' => $temp_class
+		);
+		$this->db->insert('record_testing', $testing);
 	}
 
 }
