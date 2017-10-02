@@ -175,4 +175,50 @@ class Welcome extends CI_Controller {
 		$this->db->insert('record_testing', $testing);
 	}
 
+	public function cek_duduk_thiar(){
+		$xyz = $_GET["xyz"];
+		$total = sizeof($xyz);
+		$x = 0;
+		$y = 0;
+		$z = 0;
+		$k = 5;
+		$vote_duduk = 0;$vote_duduk_motor = 0;$vote_duduk_mobil = 0;
+		$temp_class;
+		foreach ($xyz as $key => $value) {
+			# code...
+			$data = explode("|",$value);
+			$x = $data[0];
+			$y = $data[1];
+			$z = $data[2];
+			$query_result = $this->Cek->get_knn($x,$y,$z,$k);
+			$vote_class_1=0;$vote_class_2=0;$vote_class_3=0;
+			foreach ($query_result as $row)
+			{
+				if($row["class"]==1)$vote_class_1++;
+				else if($row["class"]==2)$vote_class_2++;
+				else if($row["class"]==3)$vote_class_3++;
+			}
+			$max_vote = max($vote_class_1,$vote_class_2,$vote_class_3);
+			if($max_vote==$vote_class_1)$vote_duduk++;
+			else if($max_vote==$vote_class_2)$vote_duduk_motor++;
+			else if($max_vote==$vote_class_3)$vote_duduk_mobil++;
+		}
+
+		$final_max_vote = max($vote_duduk,$vote_duduk_motor,$vote_duduk_mobil);
+		if($final_max_vote==$vote_duduk)$temp_class = 1;
+		else if($final_max_vote==$vote_duduk_motor)$temp_class = 2;
+		else if($final_max_vote==$vote_duduk_mobil)$temp_class = 3;
+
+		//$date = new DateTime();
+		date_default_timezone_set("America/New_York"); 
+
+		$testing = array(
+			'time' => " ".date("h:i:sa"),
+			'class_sebenarnya' => 1,
+			'prediksi' => $temp_class
+		);
+		print_r($testing);
+		// $this->db->insert('record_testing', $testing);
+	}
+
 }
