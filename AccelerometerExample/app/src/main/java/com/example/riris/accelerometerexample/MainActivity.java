@@ -1,7 +1,12 @@
 package com.example.riris.accelerometerexample;
 
 import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -21,6 +26,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
+import java.util.Date;
 
 
 public class MainActivity extends Activity implements SensorEventListener {
@@ -42,13 +48,20 @@ public class MainActivity extends Activity implements SensorEventListener {
     private float deltaY = 0;
     private float deltaZ = 0;
 
+    private Date dateAwal = new Date();
+    private Date dateAkhir = new Date();
+
     private String temp = "";
+    private String discover = "";
+    private String host = "http://192.168.8.101:8000/PKJS1/welcome/";
 
     private float vibrateThreshold = 0;
 
     private TextView currentX, currentY, currentZ;
 
     public Vibrator v;
+
+    BluetoothAdapter bluetoothAdapter;
 
 
     @Override
@@ -72,7 +85,10 @@ public class MainActivity extends Activity implements SensorEventListener {
         //initialize vibration
         v = (Vibrator) this.getSystemService(Context.VIBRATOR_SERVICE);
 
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
+
+        registerReceiver(ActionFoundReceiver,new IntentFilter(BluetoothDevice.ACTION_FOUND));
     }
 
     public void initializeViews() {
@@ -124,6 +140,7 @@ public class MainActivity extends Activity implements SensorEventListener {
                 tesflagDuduk = 1;
                 tesflagNaikMontor = 0;
                 tesflagNaikMobil = 0;
+                bluetoothAdapter.startDiscovery();
             }
         });
 
@@ -188,18 +205,34 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     }
 
-
     public void displayValue() {
         currentX.setText(Float.toString(deltaX));
         currentY.setText(Float.toString(deltaY));
         currentZ.setText(Float.toString(deltaZ));
     }
 
+    private final BroadcastReceiver ActionFoundReceiver = new BroadcastReceiver(){
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // TODO Auto-generated method stub
+            String action = intent.getAction();
+            Log.i("Debug :", "cek discover");
+            if(BluetoothDevice.ACTION_FOUND.equals(action)) {
+                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+
+                discover += device.getName() + "_";
+                //btArrayAdapter.add(device.getName() + "\n" + device.getAddress());
+                //btArrayAdapter.notifyDataSetChanged();
+                Log.i("Device :", discover);
+            }
+        }};
+
     // display the current x,y,z accelerometer values
     public void displayCurrentValues() throws IOException {
         if (flagDuduk==1){
             HttpClient httpClient = new DefaultHttpClient();
-            HttpGet httpget = new HttpGet("http://192.168.8.100:8000/PKJS1/welcome/tambah_data/" + Float.toString(deltaX) + "/" + Float.toString(deltaY) + "/" + Float.toString(deltaZ)+ "/1" );
+            HttpGet httpget = new HttpGet(host + "tambah_data/" + Float.toString(deltaX) + "/" + Float.toString(deltaY) + "/" + Float.toString(deltaZ)+ "/1" );
             HttpResponse response = null;
             response = httpClient.execute(httpget);
             if(response.getStatusLine().getStatusCode()==200){
@@ -212,7 +245,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         }
         if (flagNaikMontor ==1){
             HttpClient httpClient = new DefaultHttpClient();
-            HttpGet httpget = new HttpGet("http://192.168.8.100:8000/PKJS1/welcome/tambah_data/" + Float.toString(deltaX) + "/" + Float.toString(deltaY) + "/" + Float.toString(deltaZ)+ "/2" );
+            HttpGet httpget = new HttpGet(host + "tambah_data/" + Float.toString(deltaX) + "/" + Float.toString(deltaY) + "/" + Float.toString(deltaZ)+ "/2" );
             HttpResponse response = null;
             response = httpClient.execute(httpget);
             if(response.getStatusLine().getStatusCode()==200){
@@ -225,7 +258,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         }
         if (flagNaikMobil ==1){
             HttpClient httpClient = new DefaultHttpClient();
-            HttpGet httpget = new HttpGet("http://192.168.8.100:8000/PKJS1/welcome/tambah_data/" + Float.toString(deltaX) + "/" + Float.toString(deltaY) + "/" + Float.toString(deltaZ)+ "/3" );
+            HttpGet httpget = new HttpGet(host + "tambah_data/" + Float.toString(deltaX) + "/" + Float.toString(deltaY) + "/" + Float.toString(deltaZ)+ "/3" );
             HttpResponse response = null;
             response = httpClient.execute(httpget);
             if(response.getStatusLine().getStatusCode()==200){
@@ -236,7 +269,9 @@ public class MainActivity extends Activity implements SensorEventListener {
             }
             displayValue();
         }
+
         if (tesflagDuduk==1){
+
             if (counttesduduk < 10){
                 counttesduduk = counttesduduk+1;
                 // tambah ke temp
@@ -246,8 +281,10 @@ public class MainActivity extends Activity implements SensorEventListener {
             }
             else {
                 //kirim temp
+                bluetoothAdapter.startDiscovery();
                 HttpClient httpClient = new DefaultHttpClient();
-                String url = "http://192.168.8.100:8000/PKJS1/welcome/cek_duduk/?" + temp;
+                String url = host +  "cek_duduk/?" + temp + "discover=" + discover;
+                //Log.i("" , url);
                 HttpGet httpget = new HttpGet(url);
                 HttpResponse response = null;
                 response = httpClient.execute(httpget);
@@ -263,6 +300,7 @@ public class MainActivity extends Activity implements SensorEventListener {
                 counttesduduk = 0;
                 // dispaly
                 displayValue();
+                //bluetoothAdapter.startDiscovery();
             }
         }
         if (tesflagNaikMontor==1){
@@ -275,8 +313,9 @@ public class MainActivity extends Activity implements SensorEventListener {
             }
             else {
                 //kirim temp
+                bluetoothAdapter.startDiscovery();
                 HttpClient httpClient = new DefaultHttpClient();
-                String url = "http://192.168.8.100:8000/PKJS1/welcome/cek_naikmontor/?" + temp;
+                String url = host + "cek_naikmontor/?" + temp + "discover=" + discover;
                 HttpGet httpget = new HttpGet(url);
                 HttpResponse response = null;
                 response = httpClient.execute(httpget);
@@ -304,8 +343,9 @@ public class MainActivity extends Activity implements SensorEventListener {
             }
             else {
                 //kirim temp
+                bluetoothAdapter.startDiscovery();
                 HttpClient httpClient = new DefaultHttpClient();
-                String url = "http://192.168.8.100:8000/PKJS1/welcome/cek_naikmobil/?" + temp;
+                String url = host + "cek_naikmobil/?" + temp + "discover=" + discover;
                 HttpGet httpget = new HttpGet(url);
                 HttpResponse response = null;
                 response = httpClient.execute(httpget);
